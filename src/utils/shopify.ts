@@ -14,7 +14,7 @@ export async function getProducts() {
     // GraphQL query for fetching multiple products
     const query = `
       query {
-        products(first: 10) {
+        products(first: 20) {
           edges {
             node {
               id

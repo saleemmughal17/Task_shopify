@@ -11,7 +11,7 @@ const Home = () => {
   return (
     <div>
       <div className="my-7">
-        <SectionHeader />
+        {/* <SectionHeader /> */}
       </div>
 
       <div className="pt-10">
@@ -19,7 +19,7 @@ const Home = () => {
       </div>
 
       <div className="py-24">
-        <SectionProducts />
+        {/* <SectionProducts /> */}
       </div>
 
       <div className="pb-24">
@@ -31,7 +31,7 @@ const Home = () => {
       </div>
 
       <div className="pb-24">
-        <SectionStyle />
+        {/* <SectionStyle /> */}
       </div>
     </div>
   );

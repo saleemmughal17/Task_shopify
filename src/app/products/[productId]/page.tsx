@@ -1,61 +1,52 @@
 import Link from 'next/link';
-import { pathOr } from 'ramda';
-import React from 'react';
 import { MdArrowBack } from 'react-icons/md';
-
-import { getProductByHandle } from '@/utils/shopify'; // Assuming you're fetching data from Shopify
-import ButtonCircle3 from '@/shared/Button/ButtonCircle3';
-
-import SectionMoreProducts from './SectionMoreProducts';
-import SectionProductHeader from './SectionProductHeader';
+import { getProductByHandle } from '@/utils/shopify';
 
 type Props = {
-  params: { productId: string };  // Dynamic parameter for the product ID (handle)
+  params: { productId: string };
 };
 
 const getProductData = async (handle: string) => {
-  return getProductByHandle(handle);  
+  return getProductByHandle(handle);
 };
 
 const SingleProductPage = async ({ params }: Props) => {
-  const selectedProduct = await getProductData(params.productId);  // Fetch product by handle
+  const selectedProduct = await getProductData(params.productId);
 
-  // Check if the product is found
   if (!selectedProduct) {
-    return <div>Product not found!</div>;  // Display an error if the product is not found
+    return <div className="text-center text-red-500 text-xl mt-10">Product not found!</div>;
   }
 
-  // Extract image URL
-  const imageUrl = selectedProduct.image;
-
   return (
-    <div className="container">
-      <Link href="/products" className="mb-10">
-        <ButtonCircle3 size="w-10 h-10" className="border border-neutral-300">
-          <MdArrowBack className="text-2xl" />
-        </ButtonCircle3>
+    <div className="container mx-auto px-4 lg:px-16 py-10">
+      {/* Back Button */}
+      <Link href="/products" className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900">
+        <MdArrowBack className="text-2xl" />
+        <span className="text-lg">Back to Products</span>
       </Link>
 
-      <div className="mb-20">
-        {/* Display product image */}
-        <img
-          src={imageUrl}
-          alt={`Image of ${selectedProduct.title}`}
-          className="w-full h-auto mb-8"  // Add some styling for the image
-        />
+      {/* Product Details */}
+      <div className="mt-8 flex flex-col lg:flex-row gap-10 items-center">
+        {/* Product Image */}
+        <div className="w-full lg:w-1/2">
+          <img
+            src={selectedProduct.image}
+            alt={selectedProduct.title}
+            className="w-full rounded-lg shadow-lg"
+          />
+        </div>
 
-        <SectionProductHeader
-          shots={pathOr([], ['shots'], selectedProduct)} // Default empty array if shots not found
-          productName={pathOr('', ['title'], selectedProduct)} // Default empty string if title not found
-          price={pathOr(0, ['price'], selectedProduct)} // Default 0 if price not found
-          reviews={pathOr(0, ['reviews'], selectedProduct)} // Default 0 if reviews not found
-          description={pathOr('', ['description'], selectedProduct)} // Default empty string if description not found
-        />
-      </div>
+        {/* Product Info */}
+        <div className="w-full lg:w-1/2 space-y-4">
+          <h1 className="text-3xl font-bold text-gray-900">{selectedProduct.title}</h1>
+          <p className="text-xl font-semibold text-gray-700">${selectedProduct.price}</p>
+          <p className="text-gray-600">{selectedProduct.description}</p>
 
-      {/* Section for more products, you can adjust this if you have relevant data */}
-      <div className="mb-28">
-        <SectionMoreProducts />
+          {/* Buy Now Button */}
+          <button className="mt-4 bg-black text-white px-6 py-3 rounded-lg text-lg hover:bg-gray-800 transition-all">
+            Buy Now
+          </button>
+        </div>
       </div>
     </div>
   );
