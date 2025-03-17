@@ -40,11 +40,12 @@ const ProductCard: FC<ProductCardProps> = ({ product, className }) => {
       </div>
       <div className="mt-5 space-y-1">
         <div className="flex items-center justify-between">
+          {/* Display product title */}
           <Link href={`/products/${handle}`} className="text-2xl font-medium">
             {productName}
           </Link>
-          <Variant />
         </div>
+        {/* Display product price */}
         <p className="text-2xl font-medium text-secondary">{formattedPriceString}</p>
       </div>
     </div>

@@ -1,17 +1,14 @@
 import React from 'react';
 
-import SectionCategories from './SectionCategories';
 import SectionHeader from './SectionHeader';
-import SectionMidBanner from './SectionMidBanner';
-import SectionProducts from './SectionProducts';
 import SectionSlider from './SectionSlider';
-import SectionStyle from './SectionStyle';
+import SectionProducts from './SectionProducts';
 
 const Home = () => {
   return (
     <div>
       <div className="my-7">
-        {/* <SectionHeader /> */}
+        <SectionHeader />
       </div>
 
       <div className="pt-10">
@@ -19,19 +16,7 @@ const Home = () => {
       </div>
 
       <div className="py-24">
-        {/* <SectionProducts /> */}
-      </div>
-
-      <div className="pb-24">
-        <SectionCategories />
-      </div>
-
-      <div className="pb-24">
-        <SectionMidBanner />
-      </div>
-
-      <div className="pb-24">
-        {/* <SectionStyle /> */}
+        <SectionProducts />
       </div>
     </div>
   );

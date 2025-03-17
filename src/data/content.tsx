@@ -107,28 +107,28 @@ export const NavLinks: NavItemType[] = [
     name: 'Home',
     href: '/home',
   },
-  {
-    id: ncNanoId(),
-    name: 'Blog',
-    href: '/blog',
-  },
-  {
-    id: ncNanoId(),
-    name: 'Pages',
-    href: '/',
-    type: 'dropdown',
-    children: otherPageChildMenus,
-  },
+  // {
+  //   id: ncNanoId(),
+  //   name: 'Blog',
+  //   href: '/blog',
+  // },
+  // {
+  //   id: ncNanoId(),
+  //   name: 'Pages',
+  //   href: '/',
+  //   type: 'dropdown',
+  //   children: otherPageChildMenus,
+  // },
   {
     id: ncNanoId(),
     name: 'Collections',
     href: '/products',
   },
-  {
-    id: ncNanoId(),
-    name: 'Contact',
-    href: '/contact',
-  },
+  // {
+  //   id: ncNanoId(),
+  //   name: 'Contact',
+  //   href: '/contact',
+  // },
 ];
 
 export const headerSection = {

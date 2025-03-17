@@ -16,13 +16,17 @@ const Page = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
+        console.log("Fetching products from Shopify...");
         const fetchedProducts = await getProducts();
+        console.log("Fetched products: ", fetchedProducts);
         setProducts(fetchedProducts);
         setFilteredProducts(fetchedProducts); // Initially, show all products
       } catch (err: any) {
         setError("Error fetching products from Shopify");
+        console.error("Error fetching products: ", err);
       } finally {
         setLoading(false);
+        console.log("Fetching products complete.");
       }
     };
 
@@ -32,22 +36,32 @@ const Page = () => {
   useEffect(() => {
     if (!products.length) return;
 
-    // Filter products based on price range, handling possible undefined prices
+    console.log("Filtering products based on price range:", priceRange);
     const updatedProducts = products.filter((product) => {
       const productPrice = product?.price ?? 0; // Ensure productPrice is defined
       return productPrice >= priceRange[0] && productPrice <= priceRange[1];
     });
 
+    console.log("Filtered products: ", updatedProducts);
     setFilteredProducts(updatedProducts);
   }, [priceRange, products]);
 
   if (loading) {
-    return <div>Loading...</div>;
+    console.log("Loading products...");
+    return (
+      <div className="flex justify-center items-center h-screen">
+        {/* Simple Loading Spinner */}
+        <div className="w-16 h-16 border-4 border-t-4 border-blue-500 rounded-full animate-spin"></div>
+      </div>
+    );
   }
 
   if (error) {
+    console.log("Error: ", error);
     return <div>{error}</div>;
   }
+
+  console.log("Filtered products length: ", filteredProducts.length);
 
   return (
     <div className="container mb-20">
