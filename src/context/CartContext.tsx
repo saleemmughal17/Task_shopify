@@ -1,37 +1,93 @@
-"use client"; // Add this at the top to mark this file as a client-side component
+"use client"; 
 
-import React, { createContext, useState, useContext } from 'react';
-import { ProductType } from '@/data/types'; // Assuming you have a ProductType defined
+import React, { createContext, useState, useContext, ReactNode, useEffect } from "react";
 
-// Define the context type
-type CartContextType = {
-  cartItems: ProductType[];
-  addToCart: (product: ProductType) => void;
-};
+interface CartItem {
+  id: string;
+  title: string;
+  price: number;
+  image: string;
+  slug: string;
+  quantity: number;
+}
 
-// Create the context with an initial undefined value
+interface CartContextType {
+  cart: CartItem[]; 
+  addToCart: (product: CartItem) => void;
+  removeFromCart: (productId: string) => void;
+  updateQuantity: (productId: string, quantity: number) => void;
+}
+
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-// Custom hook to use the Cart context
-export const useCart = () => {
+export const useCart = (): CartContextType => {
   const context = useContext(CartContext);
   if (!context) {
-    throw new Error('useCart must be used within a CartProvider');
+    throw new Error("useCart must be used within a CartProvider");
   }
   return context;
 };
 
-// Correctly type the CartProvider's children prop
-export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [cartItems, setCartItems] = useState<ProductType[]>([]);
+interface CartProviderProps {
+  children: ReactNode;
+}
 
-  const addToCart = (product: ProductType) => {
-    setCartItems((prevItems) => [...prevItems, product]);
+const CartProvider = ({ children }: CartProviderProps) => {
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    // ✅ Load from localStorage only once
+    if (typeof window !== "undefined") {
+      try {
+        const storedCart = localStorage.getItem("cart");
+        console.log("🔄 Loaded cart from localStorage:", storedCart);
+        return storedCart ? JSON.parse(storedCart) : [];
+      } catch (error) {
+        console.error("❌ Error loading cart:", error);
+        return [];
+      }
+    }
+    return [];
+  });
+
+  // ✅ Save cart to localStorage when cart updates
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      console.log("💾 Saving cart:", cart);
+      localStorage.setItem("cart", JSON.stringify(cart));
+    }
+  }, [cart]);
+
+  const addToCart = (product: CartItem) => {
+    console.log("➕ Adding to cart:", product);
+    setCart((prevItems) => {
+      const existingProduct = prevItems.find((item) => item.id === product.id);
+      const updatedCart = existingProduct
+        ? prevItems.map((item) =>
+            item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+          )
+        : [...prevItems, { ...product, quantity: 1 }];
+
+      return updatedCart;
+    });
+  };
+
+  const removeFromCart = (productId: string) => {
+    console.log("❌ Removing from cart:", productId);
+    setCart((prevItems) => prevItems.filter((item) => item.id !== productId));
+  };
+
+  const updateQuantity = (productId: string, quantity: number) => {
+    if (quantity < 1) return;
+    console.log(`🔄 Updating quantity for ${productId} to ${quantity}`);
+    setCart((prevItems) =>
+      prevItems.map((item) => (item.id === productId ? { ...item, quantity } : item))
+    );
   };
 
   return (
-    <CartContext.Provider value={{ cartItems, addToCart }}>
+    <CartContext.Provider value={{ cart, addToCart, removeFromCart, updateQuantity }}>
       {children}
     </CartContext.Provider>
   );
 };
+
+export default CartProvider;

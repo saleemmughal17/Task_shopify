@@ -1,86 +1,72 @@
-import { useCart } from '@/context/CartContext';
-import Image from 'next/image';
-import Link from 'next/link';
-import { AiOutlineDelete } from 'react-icons/ai';
-import { TbBrandPaypal } from 'react-icons/tb';
-import ButtonPrimary from '@/shared/Button/ButtonPrimary';
+"use client";
+
+import React, { useEffect, useState } from "react";
+import { useCart } from "@/context/CartContext";
 
 const CartPage = () => {
-  const { cartItems } = useCart(); // Get cart items from the context
+  const { cart, removeFromCart, updateQuantity } = useCart();
+  const [isMounted, setIsMounted] = useState(false);
 
-  if (cartItems.length === 0) {
-    return <div className="text-center text-xl">Your cart is empty!</div>;
-  }
+  useEffect(() => {
+    setIsMounted(true);
+    console.log("🛒 Cart Items Loaded:", cart);
+  }, [cart]);
+
+  if (!isMounted) return <p className="text-center text-gray-500">Loading...</p>;
 
   return (
-    <div className="nc-CartPage">
-      <main className="container py-16 lg:pb-28 lg:pt-20">
-        <div className="mb-14">
-          <h2 className="block text-2xl font-medium sm:text-3xl lg:text-4xl">Your Cart</h2>
+    <div className="min-h-screen p-4 md:p-6 bg-gray-100 dark:bg-gray-900">
+      <h1 className="text-2xl md:text-3xl font-bold text-center text-gray-900 dark:text-white mb-6">
+        🛒 Your Shopping Cart
+      </h1>
+
+      {cart.length === 0 ? (
+        <div className="text-center text-gray-600 dark:text-gray-400 mt-10">
+          <p className="text-lg md:text-xl">Your cart is empty.</p>
+          <p className="text-sm">Start adding items to your cart!</p>
         </div>
-
-        <hr className="my-10 border-neutral-300 xl:my-12" />
-
-        <div className="flex flex-col lg:flex-row">
-          <div className="w-full divide-y divide-neutral-300 lg:w-[60%] xl:w-[55%]">
-            {cartItems.map((item) => (
-              <div key={item.id} className="flex py-5 last:pb-0">
-                <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl">
-                  <Image
-                    fill
-                    src={item.image}
-                    alt={item.title}
-                    className="h-full w-full object-cover object-top"
-                  />
-                  <Link className="absolute inset-0" href={`/products/${item.slug}`} />
-                </div>
-
-                <div className="ml-4 flex flex-1 flex-col justify-between">
+      ) : (
+        <div className="max-w-4xl mx-auto bg-white dark:bg-gray-800 p-4 md:p-6 rounded-lg shadow-md">
+          <ul className="space-y-4">
+            {cart.map((item) => (
+              <li 
+                key={item.id} 
+                className="flex flex-col sm:flex-row items-center justify-between p-4 border-b border-gray-300 dark:border-gray-700 space-y-4 sm:space-y-0"
+              >
+                <div className="flex items-center space-x-4">
+                  <img src={item.image} alt={item.title} className="w-16 h-16 rounded-md object-cover" />
                   <div>
-                    <h3 className="font-medium">
-                      <Link href={`/products/${item.slug}`}>{item.title}</Link>
-                    </h3>
-                    <span className="font-medium">${item.price}</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-sm">
-                    <AiOutlineDelete className="text-2xl" />
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{item.title}</h2>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Price: <strong>${item.price}</strong></p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Quantity: {item.quantity}</p>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
 
-          <div className="my-10 shrink-0 border-t border-neutral-300 lg:mx-10 lg:my-0 lg:border-l lg:border-t-0 xl:mx-16 2xl:mx-20" />
-          <div className="flex-1">
-            <div className="sticky top-28">
-              <h3 className="text-2xl font-semibold">Summary</h3>
-              <div className="mt-7 divide-y divide-neutral-300 text-sm">
-                <div className="flex justify-between pb-4">
-                  <span>Subtotal</span>
-                  <span className="font-semibold">${cartItems.reduce((acc, item) => acc + item.price, 0)}</span>
+                <div className="flex space-x-2">
+                  <button 
+                    onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                    className="px-2 md:px-3 py-1 text-sm md:text-base bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-white rounded-md hover:bg-gray-400 dark:hover:bg-gray-600"
+                  >
+                    ➖
+                  </button>
+                  <button 
+                    onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                    className="px-2 md:px-3 py-1 text-sm md:text-base bg-green-500 text-white rounded-md hover:bg-green-600"
+                  >
+                    ➕
+                  </button>
+                  <button 
+                    onClick={() => removeFromCart(item.id)}
+                    className="px-2 md:px-3 py-1 text-sm md:text-base bg-red-500 text-white rounded-md hover:bg-red-600"
+                  >
+                    ❌
+                  </button>
                 </div>
-                <div className="flex justify-between py-4">
-                  <span>Estimated Delivery & Handling</span>
-                  <span className="font-semibold">Free</span>
-                </div>
-                <div className="flex justify-between py-4">
-                  <span>Estimated taxes</span>
-                  <span className="font-semibold">$24.90</span>
-                </div>
-                <div className="flex justify-between pt-4 text-base font-semibold">
-                  <span>Total</span>
-                  <span>${cartItems.reduce((acc, item) => acc + item.price, 0) + 24.90}</span>
-                </div>
-              </div>
-              <ButtonPrimary href="/checkout" className="mt-8 w-full">Checkout Now</ButtonPrimary>
-              <ButtonPrimary href="/checkout" className="mt-3 inline-flex w-full items-center gap-1 border-2 border-primary text-primary">
-                <TbBrandPaypal className="text-2xl" />
-                PayPal
-              </ButtonPrimary>
-            </div>
-          </div>
+              </li>
+            ))}
+          </ul>
         </div>
-      </main>
+      )}
     </div>
   );
 };

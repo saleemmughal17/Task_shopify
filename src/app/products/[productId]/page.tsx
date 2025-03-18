@@ -2,62 +2,109 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { MdArrowBack } from "react-icons/md";
-import { getProductByHandle, createCheckout } from "@/utils/shopify";
+import { getProductByHandle } from "@/utils/shopify";
+import { useCart } from "@/context/CartContext"; // Import the cart context
+
+// Define the Product type for better type safety
+type Product = {
+  variantId: string;
+  title: string;
+  price: number;
+  image: string;
+  description: string;
+};
 
 type Props = {
   params: { productId: string };
 };
 
 const SingleProductPage = ({ params }: Props) => {
-  const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const { addToCart } = useCart(); // Use the addToCart function from context
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const [checkoutError, setCheckoutError] = useState("");
 
+  // Fetch product details based on productId
   useEffect(() => {
     const fetchProduct = async () => {
-      console.log("Fetching product with handle:", params.productId); // Debug: Check the product ID being fetched
+      console.log("Fetching product with ID:", params.productId);
       setIsFetching(true);
-      const product = await getProductByHandle(params.productId);
-      console.log("Fetched product:", product); // Debug: Log the product fetched from API
-      setSelectedProduct(product);
-      setIsFetching(false);
+      try {
+        const product = await getProductByHandle(params.productId);
+        if (product) {
+          console.log("Product fetched successfully:", product);
+          setSelectedProduct(product);
+        } else {
+          console.log("Product not found!");
+          setCheckoutError("Product not found.");
+        }
+      } catch (error) {
+        console.log("Error fetching product:", error);
+        setCheckoutError("Error fetching product.");
+      } finally {
+        setIsFetching(false);
+        console.log("Product fetch completed.");
+      }
     };
 
     fetchProduct();
   }, [params.productId]);
 
-  const handleCheckout = async () => {
+  // Handle the add to cart process
+  const handleAddToCart = () => {
+    console.log("Adding product to cart...");
+
     if (!selectedProduct || !selectedProduct.variantId) {
+      console.log("Product variant is unavailable.");
       setCheckoutError("Product variant is unavailable.");
-      console.log("Checkout error: Product variant is unavailable."); // Debug: Log when there's no variant
       return;
     }
 
+    const cartItem = {
+      id: selectedProduct.variantId,
+      title: selectedProduct.title,
+      price: selectedProduct.price,
+      image: selectedProduct.image,
+      slug: params.productId,
+      quantity: 1, // Default quantity is 1
+    };
+
+    console.log("Cart Item:", cartItem);
+
     setLoading(true);
-    setCheckoutError("");
-    console.log("Starting checkout process for variant:", selectedProduct.variantId); // Debug: Log when checkout is initiated
 
-    const checkoutUrl = await createCheckout(selectedProduct.variantId, 1);
-    console.log("Checkout URL:", checkoutUrl); // Debug: Log the checkout URL returned
+    // Retrieve existing cart from localStorage
+    const existingCart = JSON.parse(localStorage.getItem("cart") || "[]");
 
-    setLoading(false);
-
-    if (!checkoutUrl) {
-      setCheckoutError("Checkout failed. Please try again.");
-      console.log("Checkout failed. No URL returned."); // Debug: Log when checkout fails
+    // Check if product is already in the cart
+    const existingItem = existingCart.find((item: any) => item.id === cartItem.id);
+    if (existingItem) {
+      existingItem.quantity += 1; // Increase quantity if product exists
     } else {
-      window.location.href = checkoutUrl;
+      existingCart.push(cartItem); // Otherwise, add the new product
     }
+
+    // Save updated cart to localStorage
+    localStorage.setItem("cart", JSON.stringify(existingCart));
+
+    // Add to Cart Context
+    addToCart(cartItem);
+
+    // Redirect after a small delay for better UX
+    setTimeout(() => {
+      console.log("Redirecting to cart...");
+      window.location.href = "/cart";
+    }, 500);
   };
 
   if (isFetching) {
-    console.log("Fetching product data..."); // Debug: Log when data is being fetched
+    console.log("Loading product...");
     return <div className="text-center text-gray-700 text-xl mt-10">Loading product...</div>;
   }
 
   if (!selectedProduct) {
-    console.log("Product not found."); // Debug: Log when the product is not found
+    console.log("No product selected.");
     return <div className="text-center text-red-500 text-xl mt-10">Product not found!</div>;
   }
 
@@ -84,13 +131,13 @@ const SingleProductPage = ({ params }: Props) => {
           <p className="text-xl font-semibold text-gray-700">${selectedProduct.price}</p>
           <p className="text-gray-600">{selectedProduct.description}</p>
 
-          {/* Checkout Button */}
+          {/* Add to Cart Button */}
           <button
-            onClick={handleCheckout}
+            onClick={handleAddToCart}
             disabled={loading}
             className="mt-4 bg-black text-white px-6 py-3 rounded-lg text-lg hover:bg-gray-800 transition-all"
           >
-            {loading ? "Processing..." : "Buy Now"}
+            {loading ? "Adding to Cart..." : "Add to Cart"}
           </button>
 
           {/* Display Checkout Error if any */}
