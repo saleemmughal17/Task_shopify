@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import 'rc-slider/assets/index.css';
 import { pathOr } from 'ramda';
@@ -8,10 +8,10 @@ import React, { useState } from 'react';
 const PRICE_RANGE = [1, 5000];
 
 const SidebarFilters = ({ onPriceChange }: { onPriceChange: (range: number[]) => void }) => {
-  const [rangePrices, setRangePrices] = useState([100, 500]);
+  const [rangePrices, setRangePrices] = useState<[number, number]>([100, 500]);
 
   const handlePriceChange = (_input: number | number[]) => {
-    const newRange = _input as number[];
+    const newRange = _input as [number, number];
     setRangePrices(newRange);
     onPriceChange(newRange); // Send updated price range to parent component
   };

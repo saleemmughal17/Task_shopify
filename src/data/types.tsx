@@ -1,6 +1,8 @@
 import type { StaticImageData } from 'next/image';
 
 // ProductType can handle both static images and external URLs
+
+// ProductType can handle both static images and external URLs
 export type ProductType = {
   id: string;
   title: string;
@@ -12,7 +14,9 @@ export type ProductType = {
   slug?: string; // Optional if it's not available
   productName?: string; // Optional if it's not available
   coverImage?: StaticImageData | string; // Optional, can be StaticImageData or URL string
+  product_type?: string; // ✅ Added product_type to avoid errors
 };
+
 
 export type BlogData = {
   sectionOne: {

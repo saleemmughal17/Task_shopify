@@ -107,6 +107,11 @@ export const NavLinks: NavItemType[] = [
     name: 'Home',
     href: '/home',
   },
+  {
+    id: ncNanoId(),
+    name: 'cart',
+    href: '/cart',
+  },
   // {
   //   id: ncNanoId(),
   //   name: 'Blog',

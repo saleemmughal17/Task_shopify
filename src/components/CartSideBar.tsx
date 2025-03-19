@@ -3,11 +3,11 @@
 import { Dialog, Transition } from "@headlessui/react";
 import Image from "next/image";
 import Link from "next/link";
-import React, { Fragment, useState } from "react";
+import React, { Fragment, useEffect, useState } from "react";
 import { AiOutlineDelete } from "react-icons/ai";
 import { MdClose } from "react-icons/md";
 
-import { useCart } from "@/context/CartContext"; // 🔹 Cart Context Import
+import { useCart } from "@/context/CartContext";
 import ButtonCircle3 from "@/shared/Button/ButtonCircle3";
 import ButtonPrimary from "@/shared/Button/ButtonPrimary";
 import ButtonSecondary from "@/shared/Button/ButtonSecondary";
@@ -16,13 +16,33 @@ import LikeButton from "./LikeButton";
 
 const CartSideBar = () => {
   const [isVisable, setIsVisable] = useState(false);
-  const { cart, removeFromCart, updateQuantity } = useCart(); // ✅ Cart Context Used
+  const { cart, removeFromCart, updateQuantity } = useCart();
+  const [cartCount, setCartCount] = useState(0);
+
+  // ✅ Fix Hydration Error by ensuring cart count updates after mount
+  useEffect(() => {
+    setCartCount(cart.length);
+  }, [cart]);
 
   const handleOpenMenu = () => setIsVisable(true);
   const handleCloseMenu = () => setIsVisable(false);
 
+  // ✅ Shopify Checkout Function
+  const handleCheckout = () => {
+    const shopifyStoreUrl = "https://ms-collection-store12.myshopify.com/password"; // Replace with your Shopify store URL
+
+    // 🛒 Convert cart items into Shopify checkout format
+    const cartItems = cart.map((item) => `${item.id}:${item.quantity}`).join(",");
+
+    // 🛍️ Generate Shopify checkout URL
+    const checkoutUrl = `${shopifyStoreUrl}/${cartItems}`;
+
+    // Redirect to Shopify checkout
+    window.location.href = checkoutUrl;
+  };
+
   const renderProduct = (item) => {
-    const { id, title, image, price, quantity } = item; // ✅ Cart Item Fields
+    const { id, title, image, price, quantity } = item;
 
     return (
       <div key={id} className="flex py-5 last:pb-0">
@@ -77,13 +97,12 @@ const CartSideBar = () => {
                 <div className="relative h-screen bg-white">
                   <div className="hiddenScrollbar h-screen overflow-y-auto p-5">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-xl font-semibold">Shopping Cart ({cart.length})</h3>
+                      <h3 className="text-xl font-semibold">Shopping Cart ({cartCount})</h3>
                       <ButtonCircle3 onClick={handleCloseMenu}>
                         <MdClose className="text-2xl" />
                       </ButtonCircle3>
                     </div>
 
-                    {/* ✅ Dynamic Cart Items from Context */}
                     <div className="divide-y divide-neutral-300">
                       {cart.length > 0 ? cart.map(renderProduct) : <p className="text-gray-500">Your cart is empty.</p>}
                     </div>
@@ -103,7 +122,8 @@ const CartSideBar = () => {
                     </p>
 
                     <div className="mt-5 flex items-center gap-5">
-                      <ButtonPrimary href="/checkout" onClick={handleCloseMenu} className="w-full flex-1">
+                      {/* ✅ Shopify Checkout Button */}
+                      <ButtonPrimary onClick={handleCheckout} className="w-full flex-1">
                         Checkout
                       </ButtonPrimary>
                       <ButtonSecondary onClick={handleCloseMenu} href="/cart" className="w-full flex-1 border-2 border-primary text-primary">
@@ -121,7 +141,7 @@ const CartSideBar = () => {
             enter=" duration-300"
             enterFrom="opacity-0"
             enterTo="opacity-100"
-            leave=" duration-200"
+            leave="duration-200"
             leaveFrom="opacity-100"
             leaveTo="opacity-0"
           >
@@ -135,7 +155,7 @@ const CartSideBar = () => {
   return (
     <>
       <button type="button" onClick={handleOpenMenu} className="focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75">
-        Cart ({cart.length})
+        Checkout ({cartCount})
       </button>
 
       {renderContent()}

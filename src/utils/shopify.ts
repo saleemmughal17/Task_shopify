@@ -1,16 +1,18 @@
+const SHOPIFY_API_URL = `https://${process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN ?? "your-shop-name.myshopify.com"}/api/2023-01/graphql.json`;
+const ACCESS_TOKEN = process.env.NEXT_PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN ?? "";
 
-const SHOPIFY_API_URL = `https://${process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN}/api/2023-01/graphql.json`;
-const ACCESS_TOKEN = process.env.NEXT_PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN;
+if (!ACCESS_TOKEN) {
+  console.warn("⚠️ Warning: Shopify Access Token is missing. API calls may fail.");
+}
 
-// Function to fetch all products
-export async function getProducts() {
+// 🛍️ Fetch all products (with optional category filtering)
+export async function getProducts(category?: string) {
   try {
-    console.log("Shopify Store Domain:", process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN);
-    console.log("Shopify Access Token:", ACCESS_TOKEN);
+    console.log("Fetching products from Shopify...", category);
 
     const query = `
       query {
-        products(first: 20) {
+        products(first: 20, query: "${category ?? ''}") {
           edges {
             node {
               id
@@ -46,30 +48,26 @@ export async function getProducts() {
       body: JSON.stringify({ query }),
     });
 
-    if (!response.ok) throw new Error("Error fetching data from Shopify API");
+    if (!response.ok) throw new Error("Failed to fetch products from Shopify.");
 
     const data = await response.json();
-    console.log("Shopify data:", data);
 
-    return data.data.products.edges.map((edge) => ({
+    return data.data.products.edges.map((edge: any) => ({
       id: edge.node.id,
       title: edge.node.title,
       handle: edge.node.handle,
       description: edge.node.description,
       price: edge.node.priceRange.minVariantPrice.amount,
       currency: edge.node.priceRange.minVariantPrice.currencyCode,
-      image: edge.node.images.edges[0]?.node.originalSrc || 'https://via.placeholder.com/500',
+      image: edge.node.images.edges[0]?.node.originalSrc ?? "https://via.placeholder.com/500",
     }));
   } catch (error) {
     console.error("Error fetching products:", error);
-    throw error;
+    return [];
   }
 }
 
-
-
-
- // Function to fetch a single product by handle (including variants)
+// 🔍 Fetch single product by handle
 export async function getProductByHandle(handle: string) {
   try {
     const query = `
@@ -112,53 +110,57 @@ export async function getProductByHandle(handle: string) {
       body: JSON.stringify({ query, variables: { handle } }),
     });
 
-    if (!response.ok) throw new Error("Error fetching product from Shopify");
+    if (!response.ok) throw new Error("Failed to fetch product details.");
 
     const data = await response.json();
-    console.log("Shopify single product data:", data);
 
-    if (data?.data?.productByHandle) {
-      const product = data.data.productByHandle;
-      // Assuming you want the first variant (if there are multiple)
-      const variant = product.variants.edges[0]?.node;
-      return {
-        id: product.id,
-        title: product.title,
-        handle: product.handle,
-        description: product.description,
-        variantId: variant?.id,  // Use the variant id for checkout
-        price: variant?.priceV2.amount,
-        currency: variant?.priceV2.currencyCode,
-        image: product.images.edges[0]?.node.originalSrc || 'https://via.placeholder.com/500',
-      };
-    }
+    if (!data?.data?.productByHandle) return null;
 
-    return null;
+    const product = data.data.productByHandle;
+    const variant = product.variants.edges[0]?.node; // First variant
+
+    return {
+      id: product.id,
+      title: product.title,
+      handle: product.handle,
+      description: product.description,
+      variantId: variant?.id ?? null,
+      price: variant?.priceV2.amount ?? "0",
+      currency: variant?.priceV2.currencyCode ?? "USD",
+      image: product.images.edges[0]?.node.originalSrc ?? "https://via.placeholder.com/500",
+    };
   } catch (error) {
     console.error("Error fetching product details:", error);
     return null;
   }
 }
 
-
-// Function to create a checkout session
-
-
+// 🛒 Create Checkout & Return Checkout URL
 export const createCheckout = async (variantId: string, quantity: number) => {
   try {
-    // Create the cart
-    const response = await fetch(SHOPIFY_API_URL, {
+    if (!variantId || quantity <= 0) {
+      throw new Error("Invalid variant ID or quantity.");
+    }
+
+    console.log("🛍️ Creating a new Shopify cart...");
+
+    // 🛒 Step 1: Create a new cart
+    const createCartResponse = await fetch(SHOPIFY_API_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "X-Shopify-Storefront-Access-Token": process.env.NEXT_PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN || "",
+        "X-Shopify-Storefront-Access-Token": ACCESS_TOKEN,
       },
       body: JSON.stringify({
         query: `
-          mutation CartCreate {
+          mutation {
             cartCreate {
               cart {
                 id
+              }
+              userErrors {
+                field
+                message
               }
             }
           }
@@ -166,22 +168,31 @@ export const createCheckout = async (variantId: string, quantity: number) => {
       }),
     });
 
-    const data = await response.json();
+    const createCartData = await createCartResponse.json();
 
-    // Check for errors in the response
-    if (data.errors) {
-      console.error("Shopify API errors:", data.errors);
-      throw new Error("Error creating cart: " + JSON.stringify(data.errors));
+    if (createCartData.errors) {
+      console.error("❌ Shopify Cart Creation Error:", createCartData.errors);
+      throw new Error("Error creating cart: " + JSON.stringify(createCartData.errors));
     }
 
-    const cartId = data.data.cartCreate.cart.id;
+    const cartId = createCartData?.data?.cartCreate?.cart?.id;
+    if (!cartId) {
+      throw new Error("Cart ID is missing in the response.");
+    }
 
-    // Add the product to the cart
+    console.log("✅ Cart Created with ID:", cartId);
+
+    if (!variantId.startsWith("gid://shopify/ProductVariant/")) {
+      variantId = `gid://shopify/ProductVariant/${variantId}`;
+    }
+
+    console.log("🛒 Adding Product to Cart:", variantId);
+
     const addItemResponse = await fetch(SHOPIFY_API_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "X-Shopify-Storefront-Access-Token": process.env.NEXT_PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN || "",
+        "X-Shopify-Storefront-Access-Token": ACCESS_TOKEN,
       },
       body: JSON.stringify({
         query: `
@@ -190,6 +201,10 @@ export const createCheckout = async (variantId: string, quantity: number) => {
               cart {
                 id
                 checkoutUrl
+              }
+              userErrors {
+                field
+                message
               }
             }
           }
@@ -203,228 +218,20 @@ export const createCheckout = async (variantId: string, quantity: number) => {
 
     const addItemData = await addItemResponse.json();
 
-    // Check for errors after adding items to the cart
     if (addItemData.errors) {
-      console.error("Error adding product to cart:", addItemData.errors);
-      throw new Error("Error adding product to cart.");
+      console.error("❌ Shopify Cart Line Add Error:", addItemData.errors);
+      throw new Error("Error adding product to cart: " + JSON.stringify(addItemData.errors));
     }
 
-    // Safely check for checkoutUrl before using it
-    const checkoutUrl = addItemData.data.cartLinesAdd.cart.checkoutUrl;
-
+    const checkoutUrl = addItemData?.data?.cartLinesAdd?.cart?.checkoutUrl;
     if (!checkoutUrl) {
-      console.error("Checkout URL is missing from the response.");
-      throw new Error("Checkout URL is missing.");
+      throw new Error("Checkout URL missing from response.");
     }
 
+    console.log("✅ Checkout URL:", checkoutUrl);
     return checkoutUrl;
   } catch (error) {
-    console.error("Error creating checkout:", error);
+    console.error("❌ Error creating checkout:", error);
     return null;
   }
 };
-
-
-
-
- // Function to create a cart and add the product to it
-// export const createCheckout = async (variantId: string, quantity: number) => {
-//   try {
-//     const response = await fetch(SHOPIFY_API_URL, {
-//       method: "POST",
-//       headers: {
-//         "Content-Type": "application/json",
-//         "X-Shopify-Storefront-Access-Token": process.env.NEXT_PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN || "",
-//       },
-//       body: JSON.stringify({
-//         query: `
-//           mutation CartCreate {
-//             cartCreate {
-//               cart {
-//                 id
-//                 lines(first: 1) {
-//                   edges {
-//                     node {
-//                       id
-//                       quantity
-//                     }
-//                   }
-//                 }
-//                 checkoutUrl
-//               }
-//             }
-//           }
-//         `,
-//       }),
-//     });
-
-//     // Check if response is valid JSON
-//     const contentType = response.headers.get("content-type");
-//     if (!contentType || !contentType.includes("application/json")) {
-//       throw new Error("Invalid response from Shopify API (not JSON)");
-//     }
-
-//     const data = await response.json();
-
-//     if (data.errors) {
-//       console.error("Shopify API errors:", data.errors);
-//       throw new Error("Shopify API error: " + JSON.stringify(data.errors));
-//     }
-
-//     const cartId = data.data.cartCreate.cart.id;
-
-//     // Add the product to the cart
-//     const addItemResponse = await fetch(SHOPIFY_API_URL, {
-//       method: "POST",
-//       headers: {
-//         "Content-Type": "application/json",
-//         "X-Shopify-Storefront-Access-Token": process.env.NEXT_PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN || "",
-//       },
-//       body: JSON.stringify({
-//         query: `
-//           mutation CartLinesAdd($cartId: ID!, $lines: [CartLineInput!]!) {
-//             cartLinesAdd(cartId: $cartId, lines: $lines) {
-//               cart {
-//                 id
-//                 checkoutUrl
-//               }
-//             }
-//           }
-//         `,
-//         variables: {
-//           cartId,
-//           lines: [{ merchandiseId: variantId, quantity }],
-//         },
-//       }),
-//     });
-
-//     const addItemData = await addItemResponse.json();
-
-//     if (addItemData.errors) {
-//       console.error("Error adding product to cart:", addItemData.errors);
-//       throw new Error("Error adding product to cart.");
-//     }
-
-//     const checkoutUrl = addItemData.data.cartLinesAdd.cart.checkoutUrl;
-//     return checkoutUrl;
-//   } catch (error) {
-//     console.error("Error creating checkout:", error);
-//     return null;
-//   }
-// };
-
-  
-// Function to create a checkout session
-// export const createCheckout = async (variantId: string, quantity: number) => {
-//   try {
-//     const response = await fetch(SHOPIFY_API_URL, {
-//       method: "POST",
-//       headers: {
-//         "Content-Type": "application/json",
-//         "X-Shopify-Storefront-Access-Token": process.env.NEXT_PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN || "",
-//       },
-//       body: JSON.stringify({
-//         query: `
-//           mutation CheckoutCreate($input: CheckoutCreateInput!) {
-//             checkoutCreate(input: $input) {
-//               checkout {
-//                 webUrl
-//               }
-//               userErrors {
-//                 field
-//                 message
-//               }
-//             }
-//           }
-//         `,
-//         variables: {
-//           input: {
-//             lineItems: [{ variantId, quantity }],
-//           },
-//         },
-//       }),
-//     });
-
-//     // Check if response is valid JSON
-//     const contentType = response.headers.get("content-type");
-//     if (!contentType || !contentType.includes("application/json")) {
-//       throw new Error("Invalid response from Shopify API (not JSON)");
-//     }
-
-//     const data = await response.json();
-
-//     if (data.errors) {
-//       console.error("Shopify API errors:", data.errors);
-//       throw new Error("Shopify API error: " + JSON.stringify(data.errors));
-//     }
-
-//     if (data.data?.checkoutCreate?.userErrors.length) {
-//       console.error("Shopify checkout errors:", data.data.checkoutCreate.userErrors);
-//       throw new Error("Checkout error: " + data.data.checkoutCreate.userErrors[0].message);
-//     }
-
-//     return data.data?.checkoutCreate?.checkout?.webUrl || null;
-//   } catch (error) {
-//     console.error("Error creating checkout:", error);
-//     return null;
-//   }
-// };
-
-
-
-
-
-// export const createCheckout = async (productId: string, quantity: number) => {
-//   try {
-//     const response = await fetch(SHOPIFY_API_URL, {
-//       method: "POST",
-//       headers: {
-//         "Content-Type": "application/json",
-//         "X-Shopify-Storefront-Access-Token": process.env.NEXT_PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN || "",
-//       },
-//       body: JSON.stringify({
-//         query: `
-//           mutation CheckoutCreate($input: CheckoutCreateInput!) {
-//             checkoutCreate(input: $input) {
-//               checkout {
-//                 webUrl
-//               }
-//               userErrors {
-//                 field
-//                 message
-//               }
-//             }
-//           }
-//         `,
-//         variables: {
-//           input: {
-//             lineItems: [{ variantId: productId, quantity }],
-//           },
-//         },
-//       }),
-//     });
-
-//     // Check if response is valid JSON
-//     const contentType = response.headers.get("content-type");
-//     if (!contentType || !contentType.includes("application/json")) {
-//       throw new Error("Invalid response from Shopify API (not JSON)");
-//     }
-
-//     const data = await response.json();
-
-//     if (data.errors) {
-//       console.error("Shopify API errors:", data.errors);
-//       throw new Error("Shopify API error: " + JSON.stringify(data.errors));
-//     }
-
-//     if (data.data?.checkoutCreate?.userErrors.length) {
-//       console.error("Shopify checkout errors:", data.data.checkoutCreate.userErrors);
-//       throw new Error("Checkout error: " + data.data.checkoutCreate.userErrors[0].message);
-//     }
-
-//     return data.data?.checkoutCreate?.checkout?.webUrl || null;
-//   } catch (error) {
-//     console.error("Error creating checkout:", error);
-//     return null;
-//   }
-// };
