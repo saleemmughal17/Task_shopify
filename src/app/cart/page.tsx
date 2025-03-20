@@ -38,7 +38,7 @@ const CartPage = () => {
           <ul className="space-y-4">
             {cart.map((item) => (
               <li 
-                key={item.id} 
+                key={item.variantId} // ✅ Use variantId instead of id
                 className="flex flex-col sm:flex-row items-center justify-between p-4 border-b border-gray-300 dark:border-gray-700"
               >
                 <div className="flex items-center space-x-4">
@@ -51,9 +51,9 @@ const CartPage = () => {
                 </div>
 
                 <div className="flex space-x-2">
-                  <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="px-2 bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-white rounded-md">➖</button>
-                  <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="px-2 bg-green-500 text-white rounded-md">➕</button>
-                  <button onClick={() => removeFromCart(item.id)} className="px-2 bg-red-500 text-white rounded-md">❌</button>
+                  <button onClick={() => updateQuantity(item.variantId, item.quantity - 1)} className="px-2 bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-white rounded-md">➖</button>
+                  <button onClick={() => updateQuantity(item.variantId, item.quantity + 1)} className="px-2 bg-green-500 text-white rounded-md">➕</button>
+                  <button onClick={() => removeFromCart(item.variantId)} className="px-2 bg-red-500 text-white rounded-md">❌</button>
                 </div>
               </li>
             ))}

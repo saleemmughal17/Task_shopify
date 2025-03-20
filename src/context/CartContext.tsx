@@ -1,9 +1,9 @@
-"use client"; 
+"use client";
 
 import React, { createContext, useState, useContext, ReactNode, useEffect } from "react";
 
 interface CartItem {
-  id: string;
+  variantId: string; // ✅ Corrected from `id` to `variantId`
   title: string;
   price: number;
   image: string;
@@ -12,10 +12,10 @@ interface CartItem {
 }
 
 interface CartContextType {
-  cart: CartItem[]; 
+  cart: CartItem[];
   addToCart: (product: CartItem) => void;
-  removeFromCart: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
+  removeFromCart: (variantId: string) => void;
+  updateQuantity: (variantId: string, quantity: number) => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -34,12 +34,10 @@ interface CartProviderProps {
 
 const CartProvider = ({ children }: CartProviderProps) => {
   const [cart, setCart] = useState<CartItem[]>(() => {
-    // ✅ Load from localStorage only once
     if (typeof window !== "undefined") {
       try {
-        const storedCart = localStorage.getItem("cart");
-        console.log("🔄 Loaded cart from localStorage:", storedCart);
-        return storedCart ? JSON.parse(storedCart) : [];
+        const storedCart = JSON.parse(localStorage.getItem("cart") || "[]");
+        return storedCart.filter((item: CartItem) => item.variantId); // ✅ Ensure valid variantId
       } catch (error) {
         console.error("❌ Error loading cart:", error);
         return [];
@@ -48,38 +46,41 @@ const CartProvider = ({ children }: CartProviderProps) => {
     return [];
   });
 
-  // ✅ Save cart to localStorage when cart updates
   useEffect(() => {
     if (typeof window !== "undefined") {
-      console.log("💾 Saving cart:", cart);
-      localStorage.setItem("cart", JSON.stringify(cart));
+      try {
+        localStorage.setItem("cart", JSON.stringify(cart));
+      } catch (error) {
+        console.error("❌ Error saving cart:", error);
+      }
     }
   }, [cart]);
 
   const addToCart = (product: CartItem) => {
-    console.log("➕ Adding to cart:", product);
-    setCart((prevItems) => {
-      const existingProduct = prevItems.find((item) => item.id === product.id);
-      const updatedCart = existingProduct
-        ? prevItems.map((item) =>
-            item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
-          )
-        : [...prevItems, { ...product, quantity: 1 }];
+    if (!product.variantId) {
+      console.error("❌ Missing variantId for product:", product);
+      return;
+    }
 
-      return updatedCart;
+    setCart((prevItems) => {
+      const existingProduct = prevItems.find((item) => item.variantId === product.variantId);
+      if (existingProduct) {
+        return prevItems.map((item) =>
+          item.variantId === product.variantId ? { ...item, quantity: item.quantity + 1 } : item
+        );
+      }
+      return [...prevItems, { ...product, quantity: 1 }];
     });
   };
 
-  const removeFromCart = (productId: string) => {
-    console.log("❌ Removing from cart:", productId);
-    setCart((prevItems) => prevItems.filter((item) => item.id !== productId));
+  const removeFromCart = (variantId: string) => {
+    setCart((prevItems) => prevItems.filter((item) => item.variantId !== variantId));
   };
 
-  const updateQuantity = (productId: string, quantity: number) => {
+  const updateQuantity = (variantId: string, quantity: number) => {
     if (quantity < 1) return;
-    console.log(`🔄 Updating quantity for ${productId} to ${quantity}`);
     setCart((prevItems) =>
-      prevItems.map((item) => (item.id === productId ? { ...item, quantity } : item))
+      prevItems.map((item) => (item.variantId === variantId ? { ...item, quantity } : item))
     );
   };
 

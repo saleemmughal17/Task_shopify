@@ -14,73 +14,89 @@ import ButtonSecondary from "@/shared/Button/ButtonSecondary";
 import InputNumber from "@/shared/InputNumber/InputNumber";
 import LikeButton from "./LikeButton";
 
+interface CartItem {
+  variantId: string;
+  title: string;
+  price: number | string;
+  image: string;
+  slug: string;
+  quantity: number;
+}
+
 const CartSideBar = () => {
-  const [isVisable, setIsVisable] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
   const { cart, removeFromCart, updateQuantity } = useCart();
   const [cartCount, setCartCount] = useState(0);
 
-  // ✅ Fix Hydration Error by ensuring cart count updates after mount
   useEffect(() => {
+    console.log("Cart items:", cart);
     setCartCount(cart.length);
   }, [cart]);
 
-  const handleOpenMenu = () => setIsVisable(true);
-  const handleCloseMenu = () => setIsVisable(false);
+  const handleOpenMenu = () => setIsVisible(true);
+  const handleCloseMenu = () => setIsVisible(false);
 
-  // ✅ Shopify Checkout Function
   const handleCheckout = () => {
-    const shopifyStoreUrl = "https://ms-collection-store12.myshopify.com/password"; // Replace with your Shopify store URL
+    if (cart.length === 0) {
+      alert("Your cart is empty!");
+      return;
+    }
 
-    // 🛒 Convert cart items into Shopify checkout format
-    const cartItems = cart.map((item) => `${item.id}:${item.quantity}`).join(",");
+    const validCartItems = cart.filter((item) => item.variantId);
+    if (validCartItems.length === 0) {
+      alert("Some items are missing variant IDs and cannot be checked out.");
+      return;
+    }
 
-    // 🛍️ Generate Shopify checkout URL
-    const checkoutUrl = `${shopifyStoreUrl}/${cartItems}`;
+    const formattedCartItems = validCartItems.map((item) => {
+      const numericVariantId = item.variantId.split("/").pop();
+      return `${numericVariantId}:${item.quantity}`;
+    });
 
-    // Redirect to Shopify checkout
-    window.location.href = checkoutUrl;
+    const shopifyDomain = process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN;
+    const cartUrl = `https://${shopifyDomain}/cart/${formattedCartItems.join(",")}`;
+
+    console.log("Redirecting to Shopify Checkout:", cartUrl);
+    window.location.href = cartUrl;
   };
 
-  const renderProduct = (item) => {
-    const { id, title, image, price, quantity } = item;
+  const renderProduct = (item: CartItem) => (
+    <div key={item.variantId} className="flex py-5 last:pb-0">
+      <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl">
+        <Image fill src={item.image} alt={item.title} className="h-full w-full object-cover object-top" />
+        <Link onClick={handleCloseMenu} className="absolute inset-0" href={`/products/${item.slug}`} />
+      </div>
 
-    return (
-      <div key={id} className="flex py-5 last:pb-0">
-        <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl">
-          <Image fill src={image} alt={title} className="h-full w-full object-cover object-top" />
-          <Link onClick={handleCloseMenu} className="absolute inset-0" href={`/products/${id}`} />
+      <div className="ml-4 flex flex-1 flex-col justify-between">
+        <div className="flex justify-between">
+          <h3 className="font-medium">
+            <Link onClick={handleCloseMenu} href={`/products/${item.slug}`}>
+              {item.title}
+            </Link>
+          </h3>
+          <span className="font-medium">${Number(item.price || 0).toFixed(2)}</span>
         </div>
 
-        <div className="ml-4 flex flex-1 flex-col justify-between">
-          <div>
-            <div className="flex justify-between">
-              <h3 className="font-medium">
-                <Link onClick={handleCloseMenu} href={`/products/${id}`}>
-                  {title}
-                </Link>
-              </h3>
-              <span className="font-medium">${price}.00</span>
-            </div>
+        <div className="flex w-full items-end justify-between text-sm">
+          <div className="flex items-center gap-3">
+            <LikeButton />
+            <button onClick={() => removeFromCart(item.variantId)}>
+              <AiOutlineDelete className="text-2xl text-red-500 hover:text-red-700 cursor-pointer" />
+            </button>
           </div>
-
-          <div className="flex w-full items-end justify-between text-sm">
-            <div className="flex items-center gap-3">
-              <LikeButton />
-              <button onClick={() => removeFromCart(id)}>
-                <AiOutlineDelete className="text-2xl text-red-500 hover:text-red-700 cursor-pointer" />
-              </button>
-            </div>
-            <div>
-              <InputNumber value={quantity} onChange={(value) => updateQuantity(id, value)} />
-            </div>
+          <div>
+            <InputNumber
+              defaultValue={item.quantity}
+              onChange={(value) => updateQuantity(item.variantId, value)}
+            />
           </div>
         </div>
       </div>
-    );
-  };
+    </div>
+  );
 
   const renderContent = () => (
-    <Transition appear show={isVisable} as={Fragment}>
+    <Transition appear show={isVisible} as={Fragment}>
       <Dialog as="div" className="fixed inset-0 z-50 overflow-y-auto" onClose={handleCloseMenu}>
         <div className="z-max fixed inset-y-0 right-0 w-full max-w-md outline-none focus:outline-none md:max-w-md">
           <Transition.Child
@@ -104,7 +120,10 @@ const CartSideBar = () => {
                     </div>
 
                     <div className="divide-y divide-neutral-300">
-                      {cart.length > 0 ? cart.map(renderProduct) : <p className="text-gray-500">Your cart is empty.</p>}
+                      {cart.length > 0 
+                        ? cart.filter((item) => item.variantId).map((item) => renderProduct(item)) 
+                        : <p className="text-gray-500">Your cart is empty.</p>
+                      }
                     </div>
                   </div>
 
@@ -117,12 +136,11 @@ const CartSideBar = () => {
                         </span>
                       </span>
                       <span className="text-xl font-medium">
-                        ${cart.reduce((total, item) => total + item.price * item.quantity, 0)}
+                        ${cart.reduce((total, item) => total + Number(item.price || 0) * item.quantity, 0).toFixed(2)}
                       </span>
                     </p>
 
                     <div className="mt-5 flex items-center gap-5">
-                      {/* ✅ Shopify Checkout Button */}
                       <ButtonPrimary onClick={handleCheckout} className="w-full flex-1">
                         Checkout
                       </ButtonPrimary>
@@ -135,18 +153,6 @@ const CartSideBar = () => {
               </div>
             </div>
           </Transition.Child>
-
-          <Transition.Child
-            as={Fragment}
-            enter=" duration-300"
-            enterFrom="opacity-0"
-            enterTo="opacity-100"
-            leave="duration-200"
-            leaveFrom="opacity-100"
-            leaveTo="opacity-0"
-          >
-            <Dialog.Overlay className="fixed inset-0 bg-neutral-900/60" />
-          </Transition.Child>
         </div>
       </Dialog>
     </Transition>
@@ -154,10 +160,9 @@ const CartSideBar = () => {
 
   return (
     <>
-      <button type="button" onClick={handleOpenMenu} className="focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75">
+      <button type="button" onClick={handleOpenMenu} className="focus:outline-none">
         Checkout ({cartCount})
       </button>
-
       {renderContent()}
     </>
   );

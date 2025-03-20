@@ -8,11 +8,13 @@ if (!ACCESS_TOKEN) {
 // 🛍️ Fetch all products (with optional category filtering)
 export async function getProducts(category?: string) {
   try {
-    console.log("Fetching products from Shopify...", category);
+    console.log("Fetching products from Shopify... Category:", category);
+
+    const categoryFilter = category ? `, query: "tag:${category}"` : ""; // ✅ Fix for optional category filtering
 
     const query = `
       query {
-        products(first: 20, query: "${category ?? ''}") {
+        products(first: 20 ${categoryFilter}) {
           edges {
             node {
               id
@@ -23,6 +25,13 @@ export async function getProducts(category?: string) {
                 minVariantPrice {
                   amount
                   currencyCode
+                }
+              }
+              variants(first: 1) {
+                edges {
+                  node {
+                    id
+                  }
                 }
               }
               images(first: 1) {
@@ -48,21 +57,27 @@ export async function getProducts(category?: string) {
       body: JSON.stringify({ query }),
     });
 
-    if (!response.ok) throw new Error("Failed to fetch products from Shopify.");
+    if (!response.ok) throw new Error(`Failed to fetch products. Status: ${response.status}`);
 
     const data = await response.json();
 
-    return data.data.products.edges.map((edge: any) => ({
-      id: edge.node.id,
-      title: edge.node.title,
-      handle: edge.node.handle,
-      description: edge.node.description,
-      price: edge.node.priceRange.minVariantPrice.amount,
-      currency: edge.node.priceRange.minVariantPrice.currencyCode,
-      image: edge.node.images.edges[0]?.node.originalSrc ?? "https://via.placeholder.com/500",
-    }));
+    if (!data?.data?.products) throw new Error("Invalid response structure from Shopify API.");
+
+    return data.data.products.edges.map((edge: any) => {
+      const variantId = edge.node.variants.edges[0]?.node.id ?? null; // ✅ Ensure variantId exists
+      return {
+        id: edge.node.id,
+        title: edge.node.title,
+        handle: edge.node.handle,
+        description: edge.node.description ?? "",
+        price: edge.node.priceRange?.minVariantPrice?.amount ?? "0",
+        currency: edge.node.priceRange?.minVariantPrice?.currencyCode ?? "USD",
+        variantId: variantId,
+        image: edge.node.images.edges[0]?.node.originalSrc ?? "https://via.placeholder.com/500",
+      };
+    });
   } catch (error) {
-    console.error("Error fetching products:", error);
+    console.error("❌ Error fetching products:", error);
     return [];
   }
 }
@@ -70,6 +85,8 @@ export async function getProducts(category?: string) {
 // 🔍 Fetch single product by handle
 export async function getProductByHandle(handle: string) {
   try {
+    console.log(`Fetching product details for: ${handle}`);
+
     const query = `
       query($handle: String!) {
         productByHandle(handle: $handle) {
@@ -110,128 +127,30 @@ export async function getProductByHandle(handle: string) {
       body: JSON.stringify({ query, variables: { handle } }),
     });
 
-    if (!response.ok) throw new Error("Failed to fetch product details.");
+    if (!response.ok) throw new Error(`Failed to fetch product details. Status: ${response.status}`);
 
     const data = await response.json();
 
-    if (!data?.data?.productByHandle) return null;
+    if (!data?.data?.productByHandle) {
+      console.warn("⚠️ No product found for handle:", handle);
+      return null;
+    }
 
     const product = data.data.productByHandle;
-    const variant = product.variants.edges[0]?.node; // First variant
+    const variant = product.variants.edges[0]?.node ?? null; // ✅ Ensure variant exists
 
     return {
       id: product.id,
       title: product.title,
       handle: product.handle,
-      description: product.description,
+      description: product.description ?? "",
       variantId: variant?.id ?? null,
-      price: variant?.priceV2.amount ?? "0",
-      currency: variant?.priceV2.currencyCode ?? "USD",
+      price: variant?.priceV2?.amount ?? "0",
+      currency: variant?.priceV2?.currencyCode ?? "USD",
       image: product.images.edges[0]?.node.originalSrc ?? "https://via.placeholder.com/500",
     };
   } catch (error) {
-    console.error("Error fetching product details:", error);
+    console.error("❌ Error fetching product details:", error);
     return null;
   }
 }
-
-// 🛒 Create Checkout & Return Checkout URL
-export const createCheckout = async (variantId: string, quantity: number) => {
-  try {
-    if (!variantId || quantity <= 0) {
-      throw new Error("Invalid variant ID or quantity.");
-    }
-
-    console.log("🛍️ Creating a new Shopify cart...");
-
-    // 🛒 Step 1: Create a new cart
-    const createCartResponse = await fetch(SHOPIFY_API_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Shopify-Storefront-Access-Token": ACCESS_TOKEN,
-      },
-      body: JSON.stringify({
-        query: `
-          mutation {
-            cartCreate {
-              cart {
-                id
-              }
-              userErrors {
-                field
-                message
-              }
-            }
-          }
-        `,
-      }),
-    });
-
-    const createCartData = await createCartResponse.json();
-
-    if (createCartData.errors) {
-      console.error("❌ Shopify Cart Creation Error:", createCartData.errors);
-      throw new Error("Error creating cart: " + JSON.stringify(createCartData.errors));
-    }
-
-    const cartId = createCartData?.data?.cartCreate?.cart?.id;
-    if (!cartId) {
-      throw new Error("Cart ID is missing in the response.");
-    }
-
-    console.log("✅ Cart Created with ID:", cartId);
-
-    if (!variantId.startsWith("gid://shopify/ProductVariant/")) {
-      variantId = `gid://shopify/ProductVariant/${variantId}`;
-    }
-
-    console.log("🛒 Adding Product to Cart:", variantId);
-
-    const addItemResponse = await fetch(SHOPIFY_API_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Shopify-Storefront-Access-Token": ACCESS_TOKEN,
-      },
-      body: JSON.stringify({
-        query: `
-          mutation CartLinesAdd($cartId: ID!, $lines: [CartLineInput!]!) {
-            cartLinesAdd(cartId: $cartId, lines: $lines) {
-              cart {
-                id
-                checkoutUrl
-              }
-              userErrors {
-                field
-                message
-              }
-            }
-          }
-        `,
-        variables: {
-          cartId,
-          lines: [{ merchandiseId: variantId, quantity }],
-        },
-      }),
-    });
-
-    const addItemData = await addItemResponse.json();
-
-    if (addItemData.errors) {
-      console.error("❌ Shopify Cart Line Add Error:", addItemData.errors);
-      throw new Error("Error adding product to cart: " + JSON.stringify(addItemData.errors));
-    }
-
-    const checkoutUrl = addItemData?.data?.cartLinesAdd?.cart?.checkoutUrl;
-    if (!checkoutUrl) {
-      throw new Error("Checkout URL missing from response.");
-    }
-
-    console.log("✅ Checkout URL:", checkoutUrl);
-    return checkoutUrl;
-  } catch (error) {
-    console.error("❌ Error creating checkout:", error);
-    return null;
-  }
-};
