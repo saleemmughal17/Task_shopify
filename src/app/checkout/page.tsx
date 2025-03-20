@@ -28,11 +28,17 @@ const CheckoutPage = () => {
     }, 80);
   };
 
-  const renderProduct = (item: ProductType) => {
-    const { productName, coverImage, price, slug } = item;
+  const renderProduct = (item: Partial<ProductType>) => {
+    const {
+      id = Math.random().toString(36).substr(2, 9), // Provide a default ID if missing
+      productName = 'Unknown Product',
+      coverImage = '/fallback.jpg',
+      price = 0,
+      slug = '',
+    } = item;
 
     return (
-      <div key={productName} className="flex py-5 last:pb-0">
+      <div key={id} className="flex py-5 last:pb-0">
         <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl">
           <Image
             fill
@@ -45,13 +51,11 @@ const CheckoutPage = () => {
 
         <div className="ml-4 flex flex-1 flex-col justify-between">
           <div>
-            <div className="flex justify-between ">
-              <div>
-                <h3 className="font-medium ">
-                  <Link href={`/products/${slug}`}>{productName}</Link>
-                </h3>
-              </div>
-              <span className=" font-medium">${price}.00</span>
+            <div className="flex justify-between">
+              <h3 className="font-medium">
+                <Link href={`/products/${slug}`}>{productName}</Link>
+              </h3>
+              <span className="font-medium">${price.toFixed(2)}</span>
             </div>
           </div>
           <div className="flex w-full items-end justify-between text-sm">
@@ -68,56 +72,54 @@ const CheckoutPage = () => {
     );
   };
 
-  const renderLeft = () => {
-    return (
-      <div className="space-y-8">
-        <div id="ContactInfo" className="scroll-mt-24">
-          <ContactInfo
-            isActive={tabActive === 'ContactInfo'}
-            onOpenActive={() => {
-              setTabActive('ContactInfo');
-              handleScrollToEl('ContactInfo');
-            }}
-            onCloseActive={() => {
-              setTabActive('ShippingAddress');
-              handleScrollToEl('ShippingAddress');
-            }}
-          />
-        </div>
-
-        <div id="ShippingAddress" className="scroll-mt-24">
-          <ShippingAddress
-            isActive={tabActive === 'ShippingAddress'}
-            onOpenActive={() => {
-              setTabActive('ShippingAddress');
-              handleScrollToEl('ShippingAddress');
-            }}
-            onCloseActive={() => {
-              setTabActive('PaymentMethod');
-              handleScrollToEl('PaymentMethod');
-            }}
-          />
-        </div>
-
-        <div id="PaymentMethod" className="scroll-mt-24">
-          <PaymentMethod
-            isActive={tabActive === 'PaymentMethod'}
-            onOpenActive={() => {
-              setTabActive('PaymentMethod');
-              handleScrollToEl('PaymentMethod');
-            }}
-            onCloseActive={() => setTabActive('PaymentMethod')}
-          />
-        </div>
+  const renderLeft = () => (
+    <div className="space-y-8">
+      <div id="ContactInfo" className="scroll-mt-24">
+        <ContactInfo
+          isActive={tabActive === 'ContactInfo'}
+          onOpenActive={() => {
+            setTabActive('ContactInfo');
+            handleScrollToEl('ContactInfo');
+          }}
+          onCloseActive={() => {
+            setTabActive('ShippingAddress');
+            handleScrollToEl('ShippingAddress');
+          }}
+        />
       </div>
-    );
-  };
+
+      <div id="ShippingAddress" className="scroll-mt-24">
+        <ShippingAddress
+          isActive={tabActive === 'ShippingAddress'}
+          onOpenActive={() => {
+            setTabActive('ShippingAddress');
+            handleScrollToEl('ShippingAddress');
+          }}
+          onCloseActive={() => {
+            setTabActive('PaymentMethod');
+            handleScrollToEl('PaymentMethod');
+          }}
+        />
+      </div>
+
+      <div id="PaymentMethod" className="scroll-mt-24">
+        <PaymentMethod
+          isActive={tabActive === 'PaymentMethod'}
+          onOpenActive={() => {
+            setTabActive('PaymentMethod');
+            handleScrollToEl('PaymentMethod');
+          }}
+          onCloseActive={() => setTabActive('PaymentMethod')}
+        />
+      </div>
+    </div>
+  );
 
   return (
     <div className="nc-CheckoutPage">
-      <main className="container py-16 lg:pb-28 lg:pt-20 ">
+      <main className="container py-16 lg:pb-28 lg:pt-20">
         <div className="mb-16">
-          <h2 className="block text-2xl font-semibold sm:text-3xl lg:text-4xl ">
+          <h2 className="block text-2xl font-semibold sm:text-3xl lg:text-4xl">
             Checkout
           </h2>
         </div>
@@ -125,9 +127,9 @@ const CheckoutPage = () => {
         <div className="flex flex-col lg:flex-row">
           <div className="flex-1">{renderLeft()}</div>
 
-          <div className="my-10 shrink-0 border-t border-neutral-300 lg:mx-10 lg:my-0 lg:border-l lg:border-t-0 xl:lg:mx-14 2xl:mx-16 " />
+          <div className="my-10 shrink-0 border-t border-neutral-300 lg:mx-10 lg:my-0 lg:border-l lg:border-t-0 xl:lg:mx-14 2xl:mx-16" />
 
-          <div className="w-full lg:w-[36%] ">
+          <div className="w-full lg:w-[36%]">
             <h3 className="text-lg font-semibold">Order summary</h3>
             <div className="mt-8 divide-y divide-neutral-300">
               {products.slice(0, 3).map((item) => renderProduct(item))}

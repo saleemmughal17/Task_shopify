@@ -2,12 +2,12 @@
 
 import React, { useEffect, useState } from "react";
 import { useCart } from "@/context/CartContext";
-import { useRouter } from "next/navigation";
+
 
 const CartPage = () => {
   const { cart, removeFromCart, updateQuantity } = useCart();
   const [isMounted, setIsMounted] = useState(false);
-  const router = useRouter();
+
 
   useEffect(() => {
     setIsMounted(true);
@@ -17,13 +17,7 @@ const CartPage = () => {
 
   return (
     <div className="min-h-screen p-4 md:p-6 bg-gray-100 dark:bg-gray-900">
-      {/* ⬅ Simple Arrow Back Button */}
-      <button
-        onClick={() => router.back()}
-        className="mb-4 flex items-center text-black-500 hover:underline"
-      >
-        ⬅ Back
-      </button>
+
 
       <h1 className="text-2xl md:text-3xl font-bold text-center text-gray-900 dark:text-white mb-6">
         🛒 Your Shopping Cart
@@ -37,7 +31,7 @@ const CartPage = () => {
         <div className="max-w-4xl mx-auto bg-white dark:bg-gray-800 p-4 md:p-6 rounded-lg shadow-md">
           <ul className="space-y-4">
             {cart.map((item) => (
-              <li 
+              <li
                 key={item.variantId} // ✅ Use variantId instead of id
                 className="flex flex-col sm:flex-row items-center justify-between p-4 border-b border-gray-300 dark:border-gray-700"
               >
