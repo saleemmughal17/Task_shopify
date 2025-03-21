@@ -3,7 +3,6 @@ import type { FC } from 'react';
 import React from 'react';
 
 import type { ProductType } from '@/data/types';
-import Variant from '@/shared/Variant/Variant';
 
 interface ProductCardProps {
   product: ProductType;
@@ -14,7 +13,7 @@ const ProductCard: FC<ProductCardProps> = ({ product, className }) => {
   const { image, productName, price, handle, product_type, description } = product as ProductType & { product_type?: string };
 
   // Validate image URL, and provide a fallback if missing
-  const imageUrl = image || 'https://via.placeholder.com/500'; // Fallback image URL
+  const imageUrl = image || 'https://via.placeholder.com/500';
 
   // Ensure price is a valid number, fallback to 0 if undefined or invalid
   const formattedPrice = price && !isNaN(price) ? price : 0;
@@ -27,18 +26,23 @@ const ProductCard: FC<ProductCardProps> = ({ product, className }) => {
 
   return (
     <div className={`relative rounded-xl p-4 shadow-md ${className}`}>
-      <div className="relative h-[300px] overflow-hidden rounded-xl">
-        <img
-          src={imageUrl}
-          alt={`Product image of ${productName}`}
-          className="h-full w-full object-cover object-top"
-        />
-        <Link href={`/products/${handle}`} className="absolute inset-0 h-full w-full" />
-      </div>
+      {/* ✅ Wrap the entire image inside Link */}
+      <Link href={`/products/${handle}`} passHref>
+        <div className="relative h-[300px] overflow-hidden rounded-xl cursor-pointer">
+          <img
+            src={imageUrl}
+            alt={`Product image of ${productName}`}
+            className="h-full w-full object-cover object-top"
+          />
+        </div>
+      </Link>
+
       <div className="mt-4 space-y-2">
-        {/* Product Title */}
-        <Link href={`/products/${handle}`} className="text-xl font-semibold text-gray-900">
-          {productName}
+        {/* ✅ Wrap the product name inside Link */}
+        <Link href={`/products/${handle}`} passHref>
+          <h2 className="text-xl font-semibold text-gray-900 hover:underline cursor-pointer">
+            {productName}
+          </h2>
         </Link>
 
         {/* Product Category */}

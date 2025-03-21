@@ -1,45 +1,44 @@
-import Image from 'next/image';
-import React from 'react';
-
-import { productsCollection } from '@/data/content';
-import hero from '@/images/productsHero.jpg';
-import ButtonSecondary from '@/shared/Button/ButtonSecondary';
-import Heading from '@/shared/Heading/Heading';
-
-const categories = ['Shirts', 'Jackets', 'Pants', 'Shoes'];
-
-interface SectionProductsHeaderProps {
-  onCategorySelect: (category: string) => void; // Type added ✅
+interface Collection {
+  id: string;
+  handle: string;
+  title: string;
 }
 
-const SectionProductsHeader: React.FC<SectionProductsHeaderProps> = ({ onCategorySelect }) => {
+interface Props {
+  collections?: Collection[]; // Optional array of collections
+  onCategorySelect: (category: string | null) => void; // Function that takes a string or null
+  selectedCategory: string | null; // Can be a string or null
+}
+
+const SectionProductsHeader: React.FC<Props> = ({ collections = [], onCategorySelect, selectedCategory }) => {
   return (
-    <div className="space-y-10">
-      {/* Hero Image */}
-      <div className="h-[220px] w-full overflow-hidden rounded-2xl">
-        <Image src={hero} alt="hero products" className="h-full w-full object-cover object-center" />
-      </div>
+    <div className="flex gap-4 flex-wrap">
+      {/* "All" button */}
+      <button
+        onClick={() => onCategorySelect(null)}
+        className={`px-4 py-2 rounded transition ${
+          !selectedCategory ? "bg-blue-500 text-white" : "bg-gray-200 hover:bg-gray-300"
+        }`}
+      >
+        All
+      </button>
 
-      {/* Heading */}
-      <Heading desc={productsCollection.description} isMain>
-        {productsCollection.heading}
-      </Heading>
-
-      {/* Category Buttons */}
-      <div className="hiddenScrollbar grid grid-cols-2 gap-5 overflow-y-hidden md:grid-cols-6">
-        {categories.map((category) => (
-          <ButtonSecondary
-            className="w-full"
-            key={category}
-            onClick={() => {
-              console.log('Category Selected:', category); // Debugging line
-              onCategorySelect(category);
-            }}
+      {/* Collection buttons */}
+      {collections.length > 0 ? (
+        collections.map((collection) => (
+          <button
+            key={collection.id}
+            onClick={() => onCategorySelect(collection.handle)}
+            className={`px-4 py-2 rounded transition ${
+              selectedCategory === collection.handle ? "bg-blue-500 text-white" : "bg-gray-100 hover:bg-gray-300"
+            }`}
           >
-            {category}
-          </ButtonSecondary>
-        ))}
-      </div>
+            {collection.title || "Unnamed Collection"}
+          </button>
+        ))
+      ) : (
+        <span className="text-gray-500">No collections available</span>
+      )}
     </div>
   );
 };

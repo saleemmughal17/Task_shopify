@@ -1,53 +1,43 @@
-const SHOPIFY_API_URL = `https://${process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN ?? "your-shop-name.myshopify.com"}/api/2023-01/graphql.json`;
+const SHOPIFY_API_URL = `https://${process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN}/api/2023-01/graphql.json`;
 const ACCESS_TOKEN = process.env.NEXT_PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN ?? "";
 
 if (!ACCESS_TOKEN) {
   console.warn("⚠️ Warning: Shopify Access Token is missing. API calls may fail.");
 }
 
-// 🛍️ Fetch all products (with optional category filtering)
-export async function getProducts(category?: string) {
-  try {
-    console.log("Fetching products from Shopify... Category:", category);
-
-    const categoryFilter = category ? `, query: "tag:${category}"` : ""; // ✅ Fix for optional category filtering
-
-    const query = `
-      query {
-        products(first: 20 ${categoryFilter}) {
-          edges {
-            node {
-              id
-              title
-              handle
-              description
-              priceRange {
-                minVariantPrice {
-                  amount
-                  currencyCode
-                }
-              }
-              variants(first: 1) {
-                edges {
-                  node {
-                    id
-                  }
-                }
-              }
-              images(first: 1) {
-                edges {
-                  node {
-                    originalSrc
-                    altText
-                  }
-                }
-              }
-            }
-          }
-        }
+// ✅ **Reusable Product Fields**
+const productFields = `
+  id
+  title
+  handle
+  description
+  priceRange {
+    minVariantPrice {
+      amount
+      currencyCode
+    }
+  }
+  variants(first: 1) {
+    edges {
+      node {
+        id
       }
-    `;
+    }
+  }
+  images(first: 1) {
+    edges {
+      node {
+        originalSrc
+        altText
+      }
+    }
+  }
+`;
 
+// 🔥 **Helper Function to Fetch Data**
+async function fetchShopifyData(query: string, type: string) {
+  try {
+    console.log(`🚀 Fetching Shopify Data: ${type}...`);
     const response = await fetch(SHOPIFY_API_URL, {
       method: "POST",
       headers: {
@@ -57,100 +47,141 @@ export async function getProducts(category?: string) {
       body: JSON.stringify({ query }),
     });
 
-    if (!response.ok) throw new Error(`Failed to fetch products. Status: ${response.status}`);
+    if (!response.ok) throw new Error(`❌ API Error: ${response.statusText}`);
 
     const data = await response.json();
+    console.log(`✅ Shopify API Response [${type}]:`, data);
 
-    if (!data?.data?.products) throw new Error("Invalid response structure from Shopify API.");
+    if (type === "collections") {
+      return data?.data?.collections?.edges?.map((edge: { node: any }) => edge.node) ?? [];
+    }
+    if (type === "collection") {
+      return data?.data?.collectionByHandle?.products?.edges?.map(formatProduct) ?? [];
+    }
+    if (type === "product") {
+      return data?.data?.productByHandle ? formatProduct({ node: data.data.productByHandle }) : null;
+    }
+    return data?.data?.products?.edges?.map(formatProduct) ?? [];
 
-    return data.data.products.edges.map((edge: any) => {
-      const variantId = edge.node.variants.edges[0]?.node.id ?? null; // ✅ Ensure variantId exists
-      return {
-        id: edge.node.id,
-        title: edge.node.title,
-        handle: edge.node.handle,
-        description: edge.node.description ?? "",
-        price: edge.node.priceRange?.minVariantPrice?.amount ?? "0",
-        currency: edge.node.priceRange?.minVariantPrice?.currencyCode ?? "USD",
-        variantId: variantId,
-        image: edge.node.images.edges[0]?.node.originalSrc ?? "https://via.placeholder.com/500",
-      };
-    });
   } catch (error) {
-    console.error("❌ Error fetching products:", error);
-    return [];
+    console.error(`❌ Shopify API Error [${type}]:`, error);
+    return type === "product" ? null : [];
   }
 }
 
-// 🔍 Fetch single product by handle
-export async function getProductByHandle(handle: string) {
-  try {
-    console.log(`Fetching product details for: ${handle}`);
+// ✅ **Define Type for Product Edge**
+interface ProductEdge {
+  node: {
+    id: string;
+    title: string;
+    handle: string;
+    description?: string;
+    priceRange?: {
+      minVariantPrice?: {
+        amount: string;
+        currencyCode: string;
+      };
+    };
+    variants?: {
+      edges: {
+        node: {
+          id: string;
+        };
+      }[];
+    };
+    images?: {
+      edges: {
+        node: {
+          originalSrc: string;
+        };
+      }[];
+    };
+  };
+}
 
-    const query = `
-      query($handle: String!) {
-        productByHandle(handle: $handle) {
-          id
-          title
-          handle
-          description
-          variants(first: 10) {
-            edges {
-              node {
-                id
-                title
-                priceV2 {
-                  amount
-                  currencyCode
-                }
-              }
-            }
+// ✅ **Format Product Data**
+function formatProduct(edge: ProductEdge) {
+  return {
+    id: edge.node.id,
+    title: edge.node.title,
+    handle: edge.node.handle,
+    description: edge.node.description ?? "No description available.",
+    price: edge.node.priceRange?.minVariantPrice?.amount ?? "0",
+    currency: edge.node.priceRange?.minVariantPrice?.currencyCode ?? "USD",
+    variantId: edge.node.variants?.edges[0]?.node?.id ?? null,
+    image: edge.node.images?.edges[0]?.node?.originalSrc ?? "https://via.placeholder.com/500",
+  };
+}
+
+// 🛍️ **Get All Products**
+export async function getProducts() {
+  console.log("📦 Fetching all products...");
+  const query = `
+    query {
+      products(first: 20) {
+        edges {
+          node {
+            ${productFields}
           }
-          images(first: 1) {
-            edges {
-              node {
-                originalSrc
-                altText
-              }
+        }
+      }
+    }
+  `;
+
+  return await fetchShopifyData(query, "products");
+}
+
+// 🔍 **Get Products by Collection**
+export async function getProductsByCollection(collectionHandle: string) {
+  console.log(`🔍 Fetching products from collection: ${collectionHandle}`);
+  const query = `
+    query {
+      collectionByHandle(handle: "${collectionHandle}") {
+        products(first: 20) {
+          edges {
+            node {
+              ${productFields}
             }
           }
         }
       }
-    `;
-
-    const response = await fetch(SHOPIFY_API_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Shopify-Storefront-Access-Token": ACCESS_TOKEN,
-      },
-      body: JSON.stringify({ query, variables: { handle } }),
-    });
-
-    if (!response.ok) throw new Error(`Failed to fetch product details. Status: ${response.status}`);
-
-    const data = await response.json();
-
-    if (!data?.data?.productByHandle) {
-      console.warn("⚠️ No product found for handle:", handle);
-      return null;
     }
+  `;
 
-    const product = data.data.productByHandle;
-    const variant = product.variants.edges[0]?.node ?? null; // ✅ Ensure variant exists
+  return await fetchShopifyData(query, "collection");
+}
 
-    return {
-      id: product.id,
-      title: product.title,
-      handle: product.handle,
-      description: product.description ?? "",
-      variantId: variant?.id ?? null,
-      price: variant?.priceV2?.amount ?? "0",
-      currency: variant?.priceV2?.currencyCode ?? "USD",
-      image: product.images.edges[0]?.node.originalSrc ?? "https://via.placeholder.com/500",
-    };
-  } catch (error) {
-    console.error("❌ Error fetching product details:", error);
-    return null;
-  }
+// 📦 **Get All Collections**
+export async function getCollections() {
+  console.log("📁 Fetching all collections...");
+  const query = `
+    query {
+      collections(first: 20) {
+        edges {
+          node {
+            id
+            title
+            handle
+          }
+        }
+      }
+    }
+  `;
+
+  return await fetchShopifyData(query, "collections");
+}
+
+// 🔍 **Get Single Product by Handle**
+export async function getProduct(handle: string) {
+  console.log(`🛒 Fetching product: ${handle}`);
+  
+  const query = `
+    query {
+      productByHandle(handle: "${handle}") {
+        ${productFields}
+      }
+    }
+  `;
+
+  return await fetchShopifyData(query, "product");
 }

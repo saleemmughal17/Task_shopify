@@ -3,20 +3,23 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { MdArrowBack } from "react-icons/md";
-import { getProductByHandle } from "@/utils/shopify";
+import { getProduct } from "@/utils/shopify";  
 import { useCart } from "@/context/CartContext";
 
-type Product = {
+interface Product {
+  id: string;
+  handle: string;
   title: string;
   price: number;
+  currency: string;
   image: string;
   description: string;
   variantId: string;
-};
+}
 
-type Props = {
+interface Props {
   params: { productId: string };
-};
+}
 
 const SingleProductPage = ({ params }: Props) => {
   const router = useRouter();
@@ -30,22 +33,28 @@ const SingleProductPage = ({ params }: Props) => {
     const fetchProduct = async () => {
       setIsFetching(true);
       setCheckoutError("");
-      try {
-        const product = await getProductByHandle(params.productId);
 
-        if (product && product.variantId) {
-          setSelectedProduct({
-            title: product.title,
-            price: product.price,
-            image: product.image,
-            description: product.description,
-            variantId: product.variantId, // ✅ Correctly set variantId
-          });
-        } else {
-          setCheckoutError("Product variant is unavailable.");
+      try {
+        console.log("🔍 Fetching product by handle:", params.productId);
+        const product = await getProduct(params.productId);  
+
+        if (!product || !product.variantId) {
+          throw new Error("Product variant is unavailable.");
         }
+
+        setSelectedProduct({
+          id: product.id,
+          handle: product.handle,
+          title: product.title,
+          price: parseFloat(product.price) || 0, // ✅ Ensure price is a number
+          currency: product.currency || "USD",
+          image: product.image || "https://dummyimage.com/500x500/ddd/000.png&text=No+Image",
+          description: product.description || "No description available.",
+          variantId: product.variantId,
+        });
       } catch (error) {
-        setCheckoutError("Error fetching product.");
+        console.error("❌ Error fetching product:", error);
+        setCheckoutError("Failed to fetch product. Please try again.");
       } finally {
         setIsFetching(false);
       }
@@ -61,7 +70,7 @@ const SingleProductPage = ({ params }: Props) => {
     }
 
     const cartItem = {
-      variantId: selectedProduct.variantId, // ✅ Correct key name
+      variantId: selectedProduct.variantId,
       title: selectedProduct.title,
       price: selectedProduct.price,
       image: selectedProduct.image,
@@ -73,9 +82,10 @@ const SingleProductPage = ({ params }: Props) => {
 
     try {
       addToCart(cartItem);
-      router.push("/cart"); // Redirect to cart page
+      router.push("/cart"); 
     } catch (error) {
-      setCheckoutError("Error adding to cart.");
+      console.error("❌ Error adding to cart:", error);
+      setCheckoutError("Error adding product to cart.");
     } finally {
       setLoading(false);
     }
@@ -107,7 +117,9 @@ const SingleProductPage = ({ params }: Props) => {
 
         <div className="w-full lg:w-1/2 space-y-4">
           <h1 className="text-3xl font-bold text-gray-900">{selectedProduct.title}</h1>
-          <p className="text-xl font-semibold text-gray-700">${selectedProduct.price}</p>
+          <p className="text-xl font-semibold text-gray-700">
+            {selectedProduct.currency} ${selectedProduct.price.toFixed(2)}
+          </p>
           <p className="text-gray-600">{selectedProduct.description}</p>
 
           <button
