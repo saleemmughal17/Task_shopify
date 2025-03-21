@@ -9,97 +9,97 @@ import type { BlogType } from './types';
 
 const ncNanoId = _.uniqueId;
 
-const otherPageChildMenus: NavItemType[] = [
-  {
-    id: ncNanoId(),
-    href: '/home',
-    name: 'Home',
-  },
-  {
-    id: ncNanoId(),
-    href: '/checkout',
-    name: 'Checkout',
-  },
-  {
-    id: ncNanoId(),
-    href: '/contact',
-    name: 'Contact Us',
-  },
-  {
-    id: ncNanoId(),
-    href: '/cart',
-    name: 'Cart',
-  },
-  {
-    id: ncNanoId(),
-    href: '/products',
-    name: 'Collections',
-    type: 'dropdown',
-    children: [
-      {
-        id: ncNanoId(),
-        href: '/products',
-        name: 'Collections',
-      },
-      {
-        id: ncNanoId(),
-        href: '/products/sweat-outfit',
-        name: 'Product Single',
-      },
-    ],
-  },
-  {
-    id: ncNanoId(),
-    href: '/',
-    name: 'Utility Pages',
-    type: 'dropdown',
-    children: [
-      {
-        id: ncNanoId(),
-        href: '/faqs',
-        name: 'FAQS',
-      },
-      {
-        id: ncNanoId(),
-        href: '/gg',
-        name: '404 not found',
-      },
-      {
-        id: ncNanoId(),
-        href: '/signup',
-        name: 'Signup',
-      },
-      {
-        id: ncNanoId(),
-        href: '/login',
-        name: 'Login',
-      },
-      {
-        id: ncNanoId(),
-        href: '/forgot-pass',
-        name: 'Forgot Password',
-      },
-    ],
-  },
-  {
-    id: ncNanoId(),
-    href: '/blog',
-    name: 'Blog Pages',
-    type: 'dropdown',
-    children: [
-      {
-        id: ncNanoId(),
-        href: '/blog',
-        name: 'Blog Page',
-      },
-      {
-        id: ncNanoId(),
-        href: '/blog/chic-sleek-latest-trends-fashion-wonderland',
-        name: 'Blog Single',
-      },
-    ],
-  },
-];
+// const otherPageChildMenus: NavItemType[] = [
+//   {
+//     id: ncNanoId(),
+//     href: '/home',
+//     name: 'Home',
+//   },
+//   {
+//     id: ncNanoId(),
+//     href: '/checkout',
+//     name: 'Checkout',
+//   },
+//   {
+//     id: ncNanoId(),
+//     href: '/contact',
+//     name: 'Contact Us',
+//   },
+//   {
+//     id: ncNanoId(),
+//     href: '/cart',
+//     name: 'Cart',
+//   },
+//   {
+//     id: ncNanoId(),
+//     href: '/products',
+//     name: 'Collections',
+//     type: 'dropdown',
+//     children: [
+//       {
+//         id: ncNanoId(),
+//         href: '/products',
+//         name: 'Collections',
+//       },
+//       {
+//         id: ncNanoId(),
+//         href: '/products/sweat-outfit',
+//         name: 'Product Single',
+//       },
+//     ],
+//   },
+//   {
+//     id: ncNanoId(),
+//     href: '/',
+//     name: 'Utility Pages',
+//     type: 'dropdown',
+//     children: [
+//       {
+//         id: ncNanoId(),
+//         href: '/faqs',
+//         name: 'FAQS',
+//       },
+//       {
+//         id: ncNanoId(),
+//         href: '/gg',
+//         name: '404 not found',
+//       },
+//       {
+//         id: ncNanoId(),
+//         href: '/signup',
+//         name: 'Signup',
+//       },
+//       {
+//         id: ncNanoId(),
+//         href: '/login',
+//         name: 'Login',
+//       },
+//       {
+//         id: ncNanoId(),
+//         href: '/forgot-pass',
+//         name: 'Forgot Password',
+//       },
+//     ],
+//   },
+//   {
+//     id: ncNanoId(),
+//     href: '/blog',
+//     name: 'Blog Pages',
+//     type: 'dropdown',
+//     children: [
+//       {
+//         id: ncNanoId(),
+//         href: '/blog',
+//         name: 'Blog Page',
+//       },
+//       {
+//         id: ncNanoId(),
+//         href: '/blog/chic-sleek-latest-trends-fashion-wonderland',
+//         name: 'Blog Single',
+//       },
+//     ],
+//   },
+// ];
 
 export const NavLinks: NavItemType[] = [
   {

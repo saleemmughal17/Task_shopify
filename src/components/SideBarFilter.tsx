@@ -1,7 +1,7 @@
 "use client";
 
 import 'rc-slider/assets/index.css';
-import { pathOr } from 'ramda';
+
 import Slider from 'rc-slider';
 import React, { useState } from 'react';
 
