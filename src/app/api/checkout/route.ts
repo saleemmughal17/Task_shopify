@@ -1,19 +1,28 @@
 import { NextResponse } from "next/server";
 
-export async function POST(req: Request) {
+export const POST = async (req: Request) => {
   try {
-    const { lineItems } = await req.json();
+    const body = await req.json(); // Ensure req.json() is awaited correctly
+    const lineItems = body.lineItems;
 
     if (!lineItems || lineItems.length === 0) {
       return NextResponse.json({ error: "No items in cart" }, { status: 400 });
     }
 
+    const storeDomain = process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN;
+    const storefrontToken = process.env.NEXT_PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN;
+
+    if (!storeDomain || !storefrontToken) {
+      console.error("Missing Shopify environment variables");
+      return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
+    }
+
     const response = await fetch(
-      `https://${process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN}/api/2023-01/graphql.json`,
+      `https://${storeDomain}/api/2023-01/graphql.json`,
       {
         method: "POST",
         headers: {
-          "X-Shopify-Storefront-Access-Token": process.env.NEXT_PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN!,
+          "X-Shopify-Storefront-Access-Token": storefrontToken,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -36,7 +45,7 @@ export async function POST(req: Request) {
 
     const data = await response.json();
 
-    if (data.errors || !data.data.checkoutCreate.checkout.webUrl) {
+    if (data.errors || !data.data?.checkoutCreate?.checkout?.webUrl) {
       console.error("Shopify API Error:", data);
       return NextResponse.json({ error: "Shopify API error" }, { status: 500 });
     }
@@ -46,6 +55,4 @@ export async function POST(req: Request) {
     console.error("Checkout API Error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-}
-
-
+};

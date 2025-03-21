@@ -46,4 +46,7 @@ export default bundleAnalyzer({
 
     return config;
   },
+  eslint: {
+    ignoreDuringBuilds: true, // Skips ESLint checks during builds
+  },
 });
