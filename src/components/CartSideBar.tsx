@@ -6,7 +6,7 @@ import Link from "next/link";
 import React, { Fragment, useEffect, useState } from "react";
 import { AiOutlineDelete } from "react-icons/ai";
 import { MdClose } from "react-icons/md";
-import { ShoppingCart } from "lucide-react"; // 🛒 Import Cart Icon
+import { ShoppingCart } from "lucide-react"; 
 
 import { useCart } from "@/context/CartContext";
 import ButtonCircle3 from "@/shared/Button/ButtonCircle3";
@@ -82,35 +82,35 @@ const CartSideBar = () => {
       </button>
       <Transition appear show={isVisible} as={Fragment}>
         <Dialog as="div" className="fixed inset-0 z-50 overflow-y-auto" onClose={handleCloseMenu}>
-          <div className="z-max fixed inset-y-0 right-0 w-full max-w-md outline-none focus:outline-none md:max-w-md">
+          <div className="fixed inset-y-0 right-0 w-full max-w-[90%] md:max-w-md h-screen max-h-screen bg-white shadow-lg rounded-t-xl focus:outline-none">
             <Transition.Child as={Fragment} enter="transition duration-100 transform" enterFrom="opacity-0 translate-x-full" enterTo="opacity-100 translate-x-0" leave="transition duration-150 transform" leaveFrom="opacity-100 translate-x-0" leaveTo="opacity-0 translate-x-full">
-              <div className="relative z-20">
-                <div className="overflow-hidden shadow-lg ring-1 ring-black/5">
-                  <div className="relative h-screen bg-white flex flex-col">
-                    <div className="p-5 flex items-center justify-between border-b">
-                      <h3 className="text-xl font-semibold">Shopping Cart ({cartCount})</h3>
-                      <ButtonCircle3 onClick={handleCloseMenu}>
-                        <MdClose className="text-2xl" />
-                      </ButtonCircle3>
-                    </div>
-                    <div className="flex-1 overflow-y-auto p-5 divide-y divide-neutral-300">
-                      {cart.length > 0 ? cart.map((item) => renderProduct(item)) : <p className="text-gray-500">Your cart is empty.</p>}
-                    </div>
-                    <div className="sticky bottom-0 left-0 w-full bg-neutral-50 p-5 border-t shadow-md">
-                      <p className="flex justify-between">
-                        <span>
-                          <span className="font-medium">Subtotal</span>
-                          <span className="block text-sm text-neutral-500">Shipping and taxes calculated at checkout.</span>
-                        </span>
-                        <span className="text-xl font-medium">
-                          ${cart.reduce((total, item) => total + Number(item.price || 0) * item.quantity, 0).toFixed(2)}
-                        </span>
-                      </p>
-                      <div className="mt-5 flex items-center gap-5">
-                        <ButtonPrimary onClick={handleCheckout} className="w-full flex-1">Checkout</ButtonPrimary>
-                        <ButtonSecondary onClick={handleCloseMenu} href="/cart" className="w-full flex-1 border-2 border-primary text-primary">View cart</ButtonSecondary>
-                      </div>
-                    </div>
+              <div className="relative z-20 flex flex-col h-screen max-h-screen">
+                <div className="p-5 flex items-center justify-between border-b">
+                  <h3 className="text-xl font-semibold">Shopping Cart ({cartCount})</h3>
+                  <ButtonCircle3 onClick={handleCloseMenu}>
+                    <MdClose className="text-2xl" />
+                  </ButtonCircle3>
+                </div>
+                
+                {/* Scrollable Cart Items */}
+                <div className="flex-1 overflow-y-auto p-5 divide-y divide-neutral-300">
+                  {cart.length > 0 ? cart.map((item) => renderProduct(item)) : <p className="text-gray-500">Your cart is empty.</p>}
+                </div>
+                
+                {/* Sticky Bottom Bar */}
+                <div className="sticky bottom-0 left-0 w-full bg-neutral-50 p-5 border-t shadow-md">
+                  <p className="flex justify-between">
+                    <span>
+                      <span className="font-medium">Subtotal</span>
+                      <span className="block text-sm text-neutral-500">Shipping and taxes calculated at checkout.</span>
+                    </span>
+                    <span className="text-xl font-medium">
+                      ${cart.reduce((total, item) => total + Number(item.price || 0) * item.quantity, 0).toFixed(2)}
+                    </span>
+                  </p>
+                  <div className="mt-5 flex items-center gap-5">
+                    <ButtonPrimary onClick={handleCheckout} className="w-full flex-1">Checkout</ButtonPrimary>
+                    <ButtonSecondary onClick={handleCloseMenu} href="/cart" className="w-full flex-1 border-2 border-primary text-primary">View cart</ButtonSecondary>
                   </div>
                 </div>
               </div>
