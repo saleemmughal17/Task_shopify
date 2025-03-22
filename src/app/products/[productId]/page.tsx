@@ -127,7 +127,7 @@ const SingleProductPage = ({ params }: Props) => {
             disabled={loading}
             className="mt-4 bg-black text-white px-6 py-3 rounded-lg text-lg hover:bg-gray-800 transition-all"
           >
-            {loading ? "Adding to Cart..." : "Add to Cart"}
+            {loading ? "Adding to CheckOut..." : "CheckOut"}
           </button>
 
           {checkoutError && <p className="text-red-500 mt-2">{checkoutError}</p>}
