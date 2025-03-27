@@ -2,8 +2,6 @@ import type { FC } from 'react';
 import React from 'react';
 import { MdStar } from 'react-icons/md';
 
-import ImageShowCase from '@/components/ImageShowCase';
-import SizeSelect from '@/components/SizeSelect';
 import ButtonPrimary from '@/shared/Button/ButtonPrimary';
 import Heading from '@/shared/Heading/Heading';
 import Variant from '@/shared/Variant/Variant';
@@ -25,8 +23,17 @@ const SectionProductHeader: FC<SectionProductHeaderProps> = ({
 }) => {
   return (
     <div className="items-stretch justify-between space-y-10 lg:flex lg:space-y-0">
+      {/* ✅ Replaced missing ImageShowCase with an <img> tag */}
       <div className="basis-[47%]">
-        <ImageShowCase shots={shots} />
+        {shots.length > 0 ? (
+          <img
+            src={shots[0]}
+            alt={productName}
+            className="w-full h-auto rounded-lg shadow-md"
+          />
+        ) : (
+          <p>No images available</p>
+        )}
       </div>
 
       <div className="basis-[48%] space-y-7">
@@ -42,10 +49,10 @@ const SectionProductHeader: FC<SectionProductHeaderProps> = ({
             <MdStar />
             <MdStar />
           </div>
-          <span className="text-sm text-neutral-500">({reviews}k)Reviews</span>
+          <span className="text-sm text-neutral-500">({reviews}k) Reviews</span>
         </div>
         <p className="text-2xl font-semibold text-secondary">${price}.00</p>
-        <SizeSelect />
+        
 
         <div>
           <h4 className="mb-5 font-medium">Colours available</h4>

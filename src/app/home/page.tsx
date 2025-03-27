@@ -7,7 +7,7 @@ import SectionProducts from './SectionProducts';
 const Home = () => {
   return (
     <div>
-      <div className="">
+      <div>
         <SectionHeader />
       </div>
 
