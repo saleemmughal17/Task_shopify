@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import React from 'react';
-import { BsLinkedin, BsSpotify, BsTwitter } from 'react-icons/bs';
+
 import { MdCopyright } from 'react-icons/md';
 
 const Footer: React.FC = () => {
@@ -15,22 +15,22 @@ const Footer: React.FC = () => {
               <li>
                 <Link href="/">Home</Link>
               </li>
-              <li>
+              {/* <li>
                 <Link href="/blog">Blog</Link>
-              </li>
+              </li> */}
               <li>
                 <Link href="/products">Collection</Link>
               </li>
               <li>
-                <Link href="/contact">Contact</Link>
+                <Link href="/cart">Cart</Link>
               </li>
             </ul>
           </div>
 
           <div>
-            <h4 className="text-xl font-medium">Follow Us</h4>
+            <h4 className="text-xl font-medium"></h4>
             <div className="flex gap-4">
-              <Link href="https://twitter.com" target="_blank">
+              {/* <Link href="https://twitter.com" target="_blank">
                 <BsTwitter className="text-2xl" />
               </Link>
               <Link href="https://spotify.com" target="_blank">
@@ -38,7 +38,7 @@ const Footer: React.FC = () => {
               </Link>
               <Link href="https://linkedin.com" target="_blank">
                 <BsLinkedin className="text-2xl" />
-              </Link>
+              </Link> */}
             </div>
           </div>
 
@@ -57,7 +57,7 @@ const Footer: React.FC = () => {
         <div className="border-t border-gray-600 pt-4 text-center">
           <div className="flex justify-center items-center gap-2">
             <MdCopyright />
-            <span>2023 LuxLoom. All rights reserved</span>
+            <span>2025 LuxLoom. All rights reserved</span>
           </div>
           <div className="flex justify-center gap-6 mt-2">
             <Link href="/terms" className="text-sm">Terms of Service</Link>
